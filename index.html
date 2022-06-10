@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1 id="title">Decode Heif Demo</h1>
+    <div>
+        <button onclick="requestRemoteHeifFile()">对比 PNG 和 HEIF 的性能</button>
+        <br>
+        <br>
+
+        HEIF 请求耗时：<input type="text" id="request_heif">
+        HEIF 解码耗时：<input type="text" id="heif_duration">
+        HEIF 文件大小: <input type="text" id="heif_size">
+        <br>
+        <br>
+
+        PNG 请求耗时：<input type="text" id="request_png">
+        PNG 解码耗时：<input type="text" id="png_duration">
+        PNG 文件大小: <input type="text" id="png_size">
+        <br>
+        <br>
+
+        heif:<canvas id="canvas" style="width:200px;height:133px"></canvas>
+        png:<img src="" alt="" id="png" width="200">
+    </div>
+</body>
+<script src="./lib/libheif.js"></script>
+<script>
+    console.log("using libheif version:", libheif.heif_get_version())
+</script>
+<script>
+    const _performance = {
+        heifRequestStart() {
+            performance.mark("request_heif_start")
+        },
+        heifRequestEnd() {
+
+            performance.mark('request_heif_end')
+
+            const { duration } = performance.measure("request_heif", "request_heif_start", "request_heif_end")
+
+            $requestHeifDurationInput.value = `${(duration / 1000).toFixed(4)}s`
+        },
+        heifDecodeStart() {
+            performance.mark("heif_decode_start")
+        },
+        heifDecodeEnd() {
+            performance.mark("heif_decode_end")
+
+            const duration = (performance.measure("decode_heif", "heif_decode_start", "heif_decode_end").duration).toFixed(4)
+
+            $heifDurationInput.value = `${(duration / 1000).toFixed(4)}s`
+        },
+        /**
+         * @param buffer { ArrayBuffer }
+         * */
+        measureHeifFileSize(buffer) {
+            const size = (buffer.byteLength / (1024 ** 2)).toFixed(4)
+
+            $heifSizeInput.value = `${size}mb`
+        },
+        pngRequestStart() {
+            performance.mark("request_png_start")
+        },
+        pngRequestEnd() {
+            performance.mark('request_png_end')
+
+            const { duration } = performance.measure("request_png", "request_png_start", "request_png_end")
+
+            $requestPngDurationInput.value = `${(duration / 1000).toFixed(4)}s`
+        },
+        pngDecodeStart() {
+            performance.mark("png_decode_start")
+        },
+        pngDecodeEnd() {
+            performance.mark("png_decode_end")
+
+            const duration = (performance.measure("decode_png", "png_decode_start", "png_decode_end").duration).toFixed(4)
+
+            $pngDurationInput.value = `${(duration / 1000).toFixed(4)}ms`
+        },
+        /**
+         * @param file { File }
+         * */
+        measurePngFileSize(file) {
+            const size = (file.size / (1024 ** 2)).toFixed(4)
+
+            $pngSizeInput.value = `${size}mb`
+        }
+    }
+
+</script>
+<script>
+    const heifImageUrl = "./assets/galaxy.heic"
+    const pngImageUrl = "./assets/galaxy.png"
+
+    const $requestHeifDurationInput = document.getElementById("request_heif")
+    const $requestPngDurationInput = document.getElementById("request_png")
+    const $heifDurationInput = document.getElementById("heif_duration")
+    const $pngDurationInput = document.getElementById("png_duration")
+    const $heifSizeInput = document.getElementById("heif_size")
+    const $pngSizeInput = document.getElementById("png_size")
+    const $heifContainer = document.getElementById("heif")
+    const $pngContainer = document.getElementById("png")
+    const $canvas = document.getElementById("canvas")
+    const $title = document.getElementById("title")
+    const ctx = $canvas.getContext('2d')
+
+
+    async function requestRemoteHeifFile() {
+        $title.innerHTML = "Loading..."
+
+        await Promise.all([renderPngImage(), renderHeifImage()])
+
+        $title.innerHTML = "Decode Heif Demo"
+
+    }
+
+    async function renderHeifImage() {
+
+        _performance.heifRequestStart()
+
+        const res = await fetch(heifImageUrl)
+
+        const buffer = await res.arrayBuffer()
+
+        _performance.heifRequestEnd()
+
+        _performance.measureHeifFileSize(buffer)
+
+        const decoder = new libheif.HeifDecoder()
+
+        const [heifImg] = decoder.decode(buffer)
+
+        const w = $canvas.width = heifImg.get_width()
+        const h = $canvas.height = heifImg.get_height()
+
+        _performance.heifDecodeStart()
+
+        heifImg.display(ctx.createImageData(w, h), (imageData) => {
+
+            _performance.heifDecodeEnd()
+
+            ctx.putImageData(imageData, 0, 0)
+
+        })
+    }
+
+    async function renderPngImage() {
+
+        _performance.pngRequestStart()
+
+        const res = await fetch(pngImageUrl)
+
+        const blob = await res.blob()
+
+        _performance.pngRequestEnd()
+
+        const file = new File([blob], "pngImage")
+
+        _performance.measurePngFileSize(file)
+
+        const reader = new FileReader()
+
+        reader.readAsDataURL(file)
+
+        $pngContainer.onload = _performance.pngDecodeEnd
+
+        reader.onload = () => {
+            $pngContainer.src = reader.result
+            _performance.pngDecodeStart()
+        }
+    }
+
+</script>
+
+</html>

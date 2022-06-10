@@ -23,4 +23,3 @@ RUN ./scripts/run-ci.sh
 
 COPY ./sync-js-to-host.sh ./sync-js-to-host.sh
 
-RUN ./sync-js-to-host.sh

@@ -1,3 +1,5 @@
+# 需要提前在设置 Docker 客户端设置共享文件夹的目录 /tmp/libheif
+
 FROM ubuntu:focal
 
 ENV EMSCRIPTEN_VERSION=1.37.26
@@ -21,5 +23,5 @@ RUN ./scripts/prepare-ci.sh
 
 RUN ./scripts/run-ci.sh
 
-COPY ./sync-js-to-host.sh ./sync-js-to-host.sh
+COPY ./copy-js-to-host.sh ./copy-js-to-host.sh
 

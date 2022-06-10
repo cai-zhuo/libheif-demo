@@ -3,5 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
-  "scripts": {}
+  "scripts": {
+    "rm-container": "docker rm heifdemo",
+    "compile-lib": "docker build -t heif-demo .&& docker run -it --name heifdemo -v /tmp/libheif:/tmp heif-demo \"./copy-js-to-host.sh\"",
+    "build-lib": " yarn compile-lib && cp /tmp/libheif/libheif.js ./lib/libheif.js"
+  }
 }

@@ -15,22 +15,33 @@
         <br>
         <br>
 
-        HEIF 请求耗时：<input type="text" id="request_heif">
-        HEIF 解码耗时：<input type="text" id="heif_duration">
-        HEIF 文件大小: <input type="text" id="heif_size">
+        HEIF 请求并处理二进制耗时：<input type="text" id="request_heif">
+        HEIF 解码耗时：<input type="text" id="decode_duration_heif">
+        HEIF 文件大小: <input type="text" id="file_size_heif">
         <br>
         <br>
 
-        PNG 请求耗时：<input type="text" id="request_png">
-        PNG 解码耗时：<input type="text" id="png_duration">
-        PNG 文件大小: <input type="text" id="png_size">
+        JPEG 请求并处理二进制耗时：<input type="text" id="request_jpeg">
+        JPEG 解码耗时：<input type="text" id="decode_duration_jpeg">
+        JPEG 文件大小：<input type="text" id="file_size_jpeg">
         <br>
         <br>
 
-        heif:<canvas id="canvas" style="width:800px;height:532px"></canvas>
+        PNG 请求并处理二进制耗时：<input type="text" id="request_png">
+        PNG 解码耗时：<input type="text" id="decode_duration_png">
+        PNG 文件大小: <input type="text" id="file_size_png">
         <br>
         <br>
-        png:<img src="" alt="" id="png" width="800">
+
+        heif:<canvas id="canvas" style="width:400px;height:266px"></canvas>
+        <br>
+        <br>
+        jpeg:<img src="" alt="" id="jpeg" width="400">
+        <br>
+        <br>
+        png:<img src="" alt="" id="png" width="400">
+        <br>
+        <br>
     </div>
 </body>
 <script src="./lib/libheif.js"></script>
@@ -39,77 +50,59 @@
 </script>
 <script>
     const _performance = {
-        heifRequestStart() {
-            performance.mark("request_heif_start")
-        },
-        heifRequestEnd() {
-
-            performance.mark('request_heif_end')
-
-            const { duration } = performance.measure("request_heif", "request_heif_start", "request_heif_end")
-
-            $requestHeifDurationInput.value = `${(duration / 1000).toFixed(4)}s`
-        },
-        heifDecodeStart() {
-            performance.mark("heif_decode_start")
-        },
-        heifDecodeEnd() {
-            performance.mark("heif_decode_end")
-
-            const duration = (performance.measure("decode_heif", "heif_decode_start", "heif_decode_end").duration).toFixed(4)
-
-            $heifDurationInput.value = `${(duration / 1000).toFixed(4)}s`
+        /**
+         * @param type { "heif" | "png" | "jpeg" }
+         * */
+        requestStart(type) {
+            performance.mark(`request_${type}_start`)
         },
         /**
-         * @param buffer { ArrayBuffer }
-         * */
-        measureHeifFileSize(buffer) {
-            const size = (buffer.byteLength / (1024 ** 2)).toFixed(4)
+        * @param type { "heif" | "png" | "jpeg" }
+        * */
+        requestEnd(type) {
+            performance.mark(`request_${type}_end`)
 
-            $heifSizeInput.value = `${size}mb`
-        },
-        pngRequestStart() {
-            performance.mark("request_png_start")
-        },
-        pngRequestEnd() {
-            performance.mark('request_png_end')
+            const { duration } = performance.measure("request_heif", `request_${type}_start`, `request_${type}_end`)
 
-            const { duration } = performance.measure("request_png", "request_png_start", "request_png_end")
-
-            $requestPngDurationInput.value = `${(duration / 1000).toFixed(4)}s`
-        },
-        pngDecodeStart() {
-            performance.mark("png_decode_start")
-        },
-        pngDecodeEnd() {
-            performance.mark("png_decode_end")
-
-            const duration = (performance.measure("decode_png", "png_decode_start", "png_decode_end").duration).toFixed(4)
-
-            $pngDurationInput.value = `${(duration / 1000).toFixed(4)}ms`
+            document.getElementById(`request_${type}`).value = `${(duration / 1000).toFixed(4)}s`
         },
         /**
-         * @param file { File }
-         * */
-        measurePngFileSize(file) {
-            const size = (file.size / (1024 ** 2)).toFixed(4)
+        * @param type { "heif" | "png" | "jpeg" }
+        * */
+        decodeStart(type) {
+            performance.mark(`decode_start_${type}}`)
+        },
+        /**
+        * @param type { "heif" | "png" | "jpeg" }
+        * */
+        decodeEnd(type) {
+            performance.mark(`decode_end_${type}}`)
 
-            $pngSizeInput.value = `${size}mb`
-        }
+            const duration = (performance.measure("decode_heif", `decode_start_${type}}`, `decode_end_${type}}`).duration).toFixed(4)
+
+            document.getElementById(`decode_duration_${type}`).value = `${(duration / 1000).toFixed(4)}s`
+        },
+        /**
+         * @param type { "heif" | "png" | "jpeg" }
+         * @param fileOrBuffer { ArrayBuffer|File }
+         * */
+        measureFileSize(type, fileOrBuffer) {
+            const byteLength = fileOrBuffer instanceof File ? fileOrBuffer.size : fileOrBuffer.byteLength
+
+            const size = (byteLength / (1024 ** 2)).toFixed(4)
+
+            document.getElementById(`file_size_${type}`).value = `${size}Mb`
+        },
+
     }
-
 </script>
 <script>
     const heifImageUrl = "./assets/galaxy.heic"
     const pngImageUrl = "./assets/galaxy.png"
+    const jpegImageUrl = "./assets/galaxy.jpeg"
 
-    const $requestHeifDurationInput = document.getElementById("request_heif")
-    const $requestPngDurationInput = document.getElementById("request_png")
-    const $heifDurationInput = document.getElementById("heif_duration")
-    const $pngDurationInput = document.getElementById("png_duration")
-    const $heifSizeInput = document.getElementById("heif_size")
-    const $pngSizeInput = document.getElementById("png_size")
     const $heifContainer = document.getElementById("heif")
+    const $jpegContainer = document.getElementById("jpeg")
     const $pngContainer = document.getElementById("png")
     const $canvas = document.getElementById("canvas")
     const $title = document.getElementById("title")
@@ -119,23 +112,28 @@
     async function requestRemoteHeifFile() {
         $title.innerHTML = "Loading..."
 
-        await Promise.all([renderPngImage(), renderHeifImage()])
+        await Promise.all([renderPngImage(), renderHeifImage(), renderJpegImage()])
 
         $title.innerHTML = "Decode Heif Demo"
 
     }
 
+    async function requestUrl(url, type, responseHandler) {
+        _performance.requestStart(type)
+
+        const res = await responseHandler(await fetch(url))
+
+        _performance.requestEnd(type)
+
+        return res
+    }
+
     async function renderHeifImage() {
-
-        _performance.heifRequestStart()
-
         const res = await fetch(heifImageUrl)
 
-        const buffer = await res.arrayBuffer()
+        const buffer = await requestUrl(heifImageUrl, 'heif', res => res.arrayBuffer())
 
-        _performance.heifRequestEnd()
-
-        _performance.measureHeifFileSize(buffer)
+        _performance.measureFileSize("heif", buffer)
 
         const decoder = new libheif.HeifDecoder()
 
@@ -144,11 +142,11 @@
         const w = $canvas.width = heifImg.get_width()
         const h = $canvas.height = heifImg.get_height()
 
-        _performance.heifDecodeStart()
+        _performance.decodeStart("heif")
 
         heifImg.display(ctx.createImageData(w, h), (imageData) => {
 
-            _performance.heifDecodeEnd()
+            _performance.decodeEnd("heif")
 
             ctx.putImageData(imageData, 0, 0)
 
@@ -156,29 +154,44 @@
     }
 
     async function renderPngImage() {
-
-        _performance.pngRequestStart()
-
-        const res = await fetch(pngImageUrl)
-
-        const blob = await res.blob()
-
-        _performance.pngRequestEnd()
+        const blob = await requestUrl(pngImageUrl, "png", res => res.blob())
 
         const file = new File([blob], "pngImage")
 
-        _performance.measurePngFileSize(file)
+        _performance.measureFileSize("png", file)
 
         const reader = new FileReader()
 
         reader.readAsDataURL(file)
 
-        $pngContainer.onload = _performance.pngDecodeEnd
+        $pngContainer.onload = _performance.decodeEnd.bind(null, "png")
 
         reader.onload = () => {
             $pngContainer.src = reader.result
-            _performance.pngDecodeStart()
+            _performance.decodeStart('png')
         }
+    }
+
+    async function renderJpegImage() {
+        const blob = await requestUrl(jpegImageUrl, "jpeg", res => res.blob())
+
+        const file = new File([blob], 'jpegImage')
+
+        _performance.measureFileSize('jpeg', file)
+
+
+
+        const reader = new FileReader()
+
+        reader.readAsDataURL(file)
+
+        $jpegContainer.onload = _performance.decodeEnd.bind(null, "jpeg")
+
+        reader.onload = () => {
+            $jpegContainer.src = reader.result
+            _performance.decodeStart('jpeg')
+        }
+
     }
 
 </script>

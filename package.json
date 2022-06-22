@@ -6,6 +6,7 @@
   "scripts": {
     "rm-container": "docker rm heifdemo",
     "compile-lib": "docker build -t heif-demo .&& docker run -it --name heifdemo -v /tmp/libheif:/tmp heif-demo \"./copy-js-to-host.sh\"",
-    "build-lib": " yarn compile-lib && cp /tmp/libheif/libheif.js ./lib/libheif.js"
+    "copy-lib-js": "cp /tmp/libheif/libheif.js ./lib/libheif.js && cp /tmp/libheif/a.out.js ./lib/a.out.js",
+    "build-lib": " yarn compile-lib && yarn copy-lib-js && yarn rm-container"
   }
 }

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1 id="title">Decode Heif Demo</h1>
+    <div>
+        <button onclick="requestRemoteHeifFile()">对比 PNG 和 HEIF 的性能</button>
+        <br>
+        <br>
+
+        HEIF 请求并处理二进制耗时：<input type="text" id="request_heif">
+        HEIF 解码耗时：<input type="text" id="decode_duration_heif">
+        HEIF 文件大小: <input type="text" id="file_size_heif">
+        <br>
+        <br>
+
+        JPEG 请求并处理二进制耗时：<input type="text" id="request_jpeg">
+        JPEG 解码耗时：<input type="text" id="decode_duration_jpeg">
+        JPEG 文件大小：<input type="text" id="file_size_jpeg">
+        <br>
+        <br>
+
+        PNG 请求并处理二进制耗时：<input type="text" id="request_png">
+        PNG 解码耗时：<input type="text" id="decode_duration_png">
+        PNG 文件大小: <input type="text" id="file_size_png">
+        <br>
+        <br>
+
+        heif:<canvas id="canvas" style="width:400px;height:266px"></canvas>
+        <br>
+        <br>
+        jpeg:<img src="" alt="" id="jpeg" width="400">
+        <br>
+        <br>
+        png:<img src="" alt="" id="png" width="400">
+        <br>
+        <br>
+    </div>
+</body>
+<script src="../../lib/libheif.js"></script>
+<script src="../performance.js"></script>
+<script>
+    console.log("using libheif version:", libheif.heif_get_version())
+
+    const heifImageUrl = "../../assets/galaxy.heic"
+    const pngImageUrl = "../../assets/galaxy.png"
+    const jpegImageUrl = "../../assets/galaxy.jpeg"
+
+    const $heifContainer = document.getElementById("heif")
+    const $jpegContainer = document.getElementById("jpeg")
+    const $pngContainer = document.getElementById("png")
+    const $canvas = document.getElementById("canvas")
+    const $title = document.getElementById("title")
+    const ctx = $canvas.getContext('2d')
+
+
+    async function requestRemoteHeifFile() {
+        $title.innerHTML = "Loading..."
+
+        await Promise.all([renderPngImage(), renderHeifImage(), renderJpegImage()])
+
+        $title.innerHTML = "Decode Heif Demo"
+
+    }
+
+    async function requestUrl(url, type, responseHandler) {
+        _performance.requestStart(type)
+
+        const res = await responseHandler(await fetch(url))
+
+        _performance.requestEnd(type)
+
+        return res
+    }
+
+    async function renderHeifImage() {
+        const res = await fetch(heifImageUrl)
+
+        const buffer = await requestUrl(heifImageUrl, 'heif', res => res.arrayBuffer())
+
+        _performance.measureFileSize("heif", buffer)
+
+        const decoder = new libheif.HeifDecoder()
+
+        const [heifImg] = decoder.decode(buffer)
+
+        const w = $canvas.width = heifImg.get_width()
+        const h = $canvas.height = heifImg.get_height()
+
+        _performance.decodeStart("heif")
+
+        heifImg.display(ctx.createImageData(w, h), (imageData) => {
+
+            _performance.decodeEnd("heif")
+
+            ctx.putImageData(imageData, 0, 0)
+
+        })
+    }
+
+    async function renderPngImage() {
+        const blob = await requestUrl(pngImageUrl, "png", res => res.blob())
+
+        const file = new File([blob], "pngImage")
+
+        file.arrayBuffer().then(buffer => _performance.measureFileSize("png", buffer))
+
+        const reader = new FileReader()
+
+        reader.readAsDataURL(file)
+
+        $pngContainer.onload = _performance.decodeEnd.bind(null, "png")
+
+        reader.onload = () => {
+            $pngContainer.src = reader.result
+            _performance.decodeStart('png')
+        }
+    }
+
+    async function renderJpegImage() {
+        const blob = await requestUrl(jpegImageUrl, "jpeg", res => res.blob())
+
+        const file = new File([blob], 'jpegImage')
+
+        file.arrayBuffer().then(buffer => _performance.measureFileSize('jpeg', buffer))
+
+        const reader = new FileReader()
+
+        reader.readAsDataURL(file)
+
+        $jpegContainer.onload = _performance.decodeEnd.bind(null, "jpeg")
+
+        reader.onload = () => {
+            $jpegContainer.src = reader.result
+            _performance.decodeStart('jpeg')
+        }
+
+    }
+
+</script>
+
+</html>

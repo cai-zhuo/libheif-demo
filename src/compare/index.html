@@ -47,7 +47,10 @@
 <script src="../../lib/libheif.js"></script>
 <script src="../performance.js"></script>
 <script>
-    console.log("using libheif version:", libheif.heif_get_version())
+    let libheif;
+
+    initLibHeif({ locateFile: () => "../../lib/libheif.wasm" }).then(module => libheif = module)
+
 
     const heifImageUrl = "../../assets/galaxy.heic"
     const pngImageUrl = "../../assets/galaxy.png"
@@ -62,6 +65,9 @@
 
 
     async function requestRemoteHeifFile() {
+
+        if(!libheif) throw new Error("libheif is not initialized yet")
+
         $title.innerHTML = "Loading..."
 
         await Promise.all([renderPngImage(), renderHeifImage(), renderJpegImage()])

@@ -4,9 +4,10 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
+    "build-debug": "docker build -t heif-demo .&& docker run -it --name heifdemo -v /tmp/libheif:/tmp heif-demo bash",
     "rm-container": "docker rm heifdemo",
     "compile-lib": "docker build -t heif-demo .&& docker run -it --name heifdemo -v /tmp/libheif:/tmp heif-demo \"./copy-js-to-host.sh\"",
-    "copy-lib-js": "cp /tmp/libheif/libheif.js ./lib/libheif.js && cp /tmp/libheif/a.out.js ./lib/a.out.js",
+    "copy-lib-js": "cp /tmp/libheif/libheif.js ./lib/libheif.js && cp /tmp/libheif/libheif.wasm ./lib/libheif.wasm",
     "build-lib": " yarn compile-lib && yarn copy-lib-js && yarn rm-container"
   }
 }
